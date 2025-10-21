@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Exitoso - Gimnasio Pro Funcional</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .success-container {
+            text-align: center;
+            padding: 50px 20px;
+            max-width: 600px;
+            margin: 100px auto;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .success-icon {
+            font-size: 80px;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        .success-title {
+            font-size: 2em;
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        .success-message {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .back-button {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            background: linear-gradient(90deg,#007BFF,#00CFFF);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+        .back-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-icon">✅</div>
+        <h1 class="success-title">¡Pago Exitoso!</h1>
+        <p class="success-message">
+            Tu clase ha sido reservada y pagada correctamente.<br>
+            <strong>Monto: $1 CLP</strong>
+        </p>
+        <p style="color: #666; margin-bottom: 30px;">
+            Recibirás un comprobante en tu email.<br>
+            Puedes ver tu reserva en el panel de usuario.
+        </p>
+        <a href="/" class="back-button">Volver al Inicio</a>
+    </div>
+</body>
+</html>
+

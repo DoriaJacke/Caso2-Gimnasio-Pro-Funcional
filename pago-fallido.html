@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Fallido - Gimnasio Pro Funcional</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .error-container {
+            text-align: center;
+            padding: 50px 20px;
+            max-width: 600px;
+            margin: 100px auto;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .error-icon {
+            font-size: 80px;
+            color: #dc3545;
+            margin-bottom: 20px;
+        }
+        .error-title {
+            font-size: 2em;
+            color: #dc3545;
+            margin-bottom: 15px;
+        }
+        .error-message {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .retry-button {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            background: linear-gradient(90deg,#007BFF,#00CFFF);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.3s ease;
+            margin: 10px;
+        }
+        .retry-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+        }
+        .home-button {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            background: linear-gradient(90deg,#6c757d,#5a6268);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">❌</div>
+        <h1 class="error-title">Pago No Completado</h1>
+        <p class="error-message">
+            Tu pago no pudo ser procesado.<br>
+            La reserva no ha sido confirmada.
+        </p>
+        <p style="color: #666; margin-bottom: 30px;">
+            Esto puede deberse a:<br>
+            • Fondos insuficientes<br>
+            • Datos de tarjeta incorrectos<br>
+            • Cancelación del pago
+        </p>
+        <a href="/" class="retry-button">Intentar Nuevamente</a>
+        <a href="/" class="home-button">Volver al Inicio</a>
+    </div>
+</body>
+</html>
+

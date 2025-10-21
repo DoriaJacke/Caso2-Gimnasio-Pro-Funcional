@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gimnasio Pro Funcional</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- TITULO -->
+    <h1 id="titulo">Gimnasio Pro Funcional</h1>
+
+    <!-- LOGIN -->
+    <div id="login-section" class="card center">
+        <h2>Iniciar sesión</h2>
+        <input type="text" id="username" placeholder="Usuario">
+        <input type="password" id="password" placeholder="Contraseña (solo admin)" style="display:none;">
+        <select id="role" onchange="togglePasswordField()">
+            <option value="cliente">Cliente</option>
+            <option value="admin">Administrador</option>
+            <option value="entrenador">Entrenador</option>
+        </select>
+        <button onclick="login()">Ingresar</button>
+    </div>
+
+    <!-- CLIENTE -->
+    <div id="cliente-section" class="section card" style="display:none;">
+        <button onclick="volverLogin('cliente')">← Cerrar sesión</button>
+        <h2>Cliente</h2>
+        <button onclick="mostrarReservas()">Ver horas agendadas</button>
+        <button onclick="mostrarCrearReserva()">Crear nueva agenda</button>
+        <button onclick="verProgreso()">Ver progreso</button>
+        <button onclick="mostrarHistorial()">Ver historial completo</button>
+        <button onclick="mostrarPerfil()">✏️ Editar mi perfil</button>
+
+        <div id="crear-reserva" class="form-reserva" style="display:none;">
+            <h3>Crear nueva reserva</h3>
+            <select id="actividad">
+                <option value="Cardio">Cardio</option>
+                <option value="Fuerza">Fuerza</option>
+            </select>
+            <input type="date" id="fecha" min="">
+            <select id="hora"></select>
+            <select id="entrenador">
+                <option value="Ricardo Meruane">Ricardo Meruane</option>
+                <option value="George Harris">George Harris</option>
+            </select>
+            <button onclick="reservarClase()">Reservar y pagar</button>
+        </div>
+
+        <div id="lista-reservas-section" style="display:none;">
+            <h3>Mis reservas</h3>
+            <ul id="lista-reservas"></ul>
+        </div>
+
+        <div id="progreso-section" style="display:none;">
+            <h3>Progreso</h3>
+            <p id="progreso-text"></p>
+        </div>
+
+        <div id="historial-section" style="display:none;">
+            <h3>Historial Completo de Reservas</h3>
+            <p style="margin-bottom: 15px; font-size: 0.9em; color: #666;">
+                Aquí puedes ver todas tus reservas para hacer seguimiento de tu progreso
+            </p>
+            <ul id="lista-historial"></ul>
+        </div>
+
+        <div id="perfil-section" style="display:none;">
+            <h3>Mi Perfil</h3>
+            <div class="form-reserva">
+                <input type="email" id="perfil-email" placeholder="Email">
+                <input type="tel" id="perfil-telefono" placeholder="Teléfono">
+                <input type="text" id="perfil-direccion" placeholder="Dirección">
+                <input type="date" id="perfil-fechaNac" placeholder="Fecha de nacimiento">
+                <input type="number" id="perfil-peso" placeholder="Peso (kg)" step="0.1">
+                <input type="number" id="perfil-altura" placeholder="Altura (cm)" step="0.1">
+                <textarea id="perfil-objetivo" placeholder="Objetivo de entrenamiento" rows="3"></textarea>
+                <button onclick="guardarPerfil()">💾 Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="admin-section" class="section card" style="display:none;">
+        <button onclick="volverLogin('admin')">← Cerrar sesión</button>
+        <h2>Panel de Administrador</h2>
+        
+        <button onclick="mostrarCrearEntrenador()">👨‍🏫 Crear Entrenador</button>
+        <button onclick="mostrarCrearCupo()">📅 Crear Cupo</button>
+        <button onclick="mostrarListaBloques()">📋 Ver Bloques</button>
+
+        <div id="crear-entrenador-admin" style="display:none;">
+            <h3>Crear Nuevo Entrenador</h3>
+            <input type="text" id="nombre-entrenador" placeholder="Nombre completo">
+            <input type="text" id="especialidad-entrenador" placeholder="Especialidad">
+            <button onclick="crearEntrenador()">Crear Entrenador</button>
+        </div>
+
+        <div id="crear-bloque">
+            <h3>Crear Cupo/Bloque</h3>
+            <select id="act-admin">
+                <option value="Cardio">Cardio</option>
+                <option value="Fuerza">Fuerza</option>
+            </select>
+            <input type="date" id="fecha-admin" min="">
+            <select id="hora-admin"></select>
+            <select id="entrenador-admin"></select>
+            <input type="number" id="cupos-admin" placeholder="Capacidad máxima" value="10">
+            <button onclick="crearBloque()">Crear Cupo</button>
+        </div>
+        <div id="lista-bloques">
+            <h3>Cupos/Bloques Creados</h3>
+            <ul id="lista-bloques"></ul>
+        </div>
+    </div>
+
+    <!-- ENTRENADOR -->
+    <div id="entrenador-section" class="section card" style="display:none;">
+        <button onclick="volverLogin('entrenador')">← Cerrar sesión</button>
+        <h2>Entrenador</h2>
+        <ul id="lista-alumnos"></ul>
+    </div>
+
+    <!-- NOTIFICACIONES -->
+    <div id="toasts"></div>
+
+    <script src="script_integrado.js"></script>
+</body>
+</html>

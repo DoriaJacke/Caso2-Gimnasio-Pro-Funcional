@@ -321,33 +321,57 @@ def crear_transaccion_webpay():
     """
     try:
         data = request.json
-        user_id = data.get('user_id')
-        actividad = data.get('actividad')
-        fecha = data.get('fecha')
-        hora = data.get('hora')
-        entrenador_nombre = data.get('entrenador')
+        
+        # Verificar si viene con bloque_id (nuevo método) o con datos directos (método antiguo)
+        bloque_id = data.get('bloque_id')
+        user_id = data.get('usuario_id') or data.get('user_id')
+        
+        connection = get_db_connection()
+        cur = connection.cursor()
+        
+        # Si viene bloque_id, obtener los datos del bloque
+        if bloque_id:
+            cur.execute("""
+                SELECT b.*, e.nombre as nombre_entrenador, e.id as entrenador_id
+                FROM bloques b
+                LEFT JOIN entrenadores e ON b.entrenador_id = e.id
+                WHERE b.id = %s
+            """, (bloque_id,))
+            bloque = cur.fetchone()
+            
+            if not bloque:
+                cur.close()
+                connection.close()
+                return jsonify({'error': 'Bloque no encontrado'}), 404
+            
+            actividad = bloque['actividad']
+            fecha = str(bloque['fecha'])
+            hora = str(bloque['hora'])
+            entrenador_id = bloque['entrenador_id']
+            entrenador_nombre = bloque['nombre_entrenador']
+        else:
+            # Método antiguo: recibir datos directamente
+            actividad = data.get('actividad')
+            fecha = data.get('fecha')
+            hora = data.get('hora')
+            entrenador_nombre = data.get('entrenador')
+            
+            # Obtener ID del entrenador
+            cur.execute("SELECT id FROM entrenadores WHERE nombre = %s", (entrenador_nombre,))
+            entrenador = cur.fetchone()
+            
+            if not entrenador:
+                cur.close()
+                connection.close()
+                return jsonify({'error': 'Entrenador no encontrado'}), 404
+            
+            entrenador_id = entrenador['id']
         
         # Generar orden de compra única
         buy_order = f"GYM-{user_id}-{int(datetime.now().timestamp())}"
         session_id = str(user_id)
         amount = webpay_config.PRECIO_RESERVA
         return_url = webpay_config.WEBPAY_RETURN_URL
-        
-        # Guardar datos temporales de la reserva en la sesión o base de datos
-        # Por ahora lo guardamos en la BD con estado 'pendiente_pago'
-        connection = get_db_connection()
-        cur = connection.cursor()
-        
-        # Obtener ID del entrenador
-        cur.execute("SELECT id FROM entrenadores WHERE nombre = %s", (entrenador_nombre,))
-        entrenador = cur.fetchone()
-        
-        if not entrenador:
-            cur.close()
-            connection.close()
-            return jsonify({'error': 'Entrenador no encontrado'}), 404
-        
-        entrenador_id = entrenador['id']
         
         # Crear reserva temporal con estado pendiente
         cur.execute("""
@@ -626,6 +650,33 @@ def get_historial(user_id):
         return jsonify({'error': str(e)}), 500
 
 # ==================== BLOQUES (ADMIN) ====================
+@app.route('/api/cupos', methods=['GET'])
+def get_cupos():
+    try:
+        connection = get_db_connection()
+        cur = connection.cursor()
+        cur.execute("""
+            SELECT * FROM cupos
+            WHERE disponible = TRUE
+            ORDER BY fecha, hora
+        """)
+        cupos = cur.fetchall()
+        cur.close()
+        connection.close()
+        
+        for cupo in cupos:
+            if 'hora' in cupo and cupo['hora']:
+                cupo['hora'] = str(cupo['hora'])
+            if 'fecha' in cupo and cupo['fecha']:
+                cupo['fecha'] = str(cupo['fecha'])
+            if 'fecha_creacion' in cupo and cupo['fecha_creacion']:
+                cupo['fecha_creacion'] = str(cupo['fecha_creacion'])
+        
+        return jsonify(cupos), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/bloques', methods=['GET'])
 def get_bloques():
     try:

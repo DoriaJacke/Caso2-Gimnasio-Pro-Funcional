@@ -237,7 +237,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             const datosReserva = JSON.parse(sessionStorage.getItem('datosReserva') || '{}');
             
-            if (!datosReserva.cupo_id) {
+            if (!datosReserva.bloque_id) {
                 alert('No hay datos de reserva. Serás redirigido al inicio.');
                 window.location.href = '/';
                 return;
@@ -266,7 +266,7 @@
         async function procederAlPago() {
             const datosReserva = JSON.parse(sessionStorage.getItem('datosReserva') || '{}');
             
-            if (!datosReserva.cupo_id) {
+            if (!datosReserva.bloque_id) {
                 alert('Error: No hay datos de reserva');
                 return;
             }
@@ -284,7 +284,7 @@
                     },
                     body: JSON.stringify({
                         usuario_id: datosReserva.usuario_id,
-                        cupo_id: datosReserva.cupo_id
+                        bloque_id: datosReserva.bloque_id
                     })
                 });
 

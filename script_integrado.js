@@ -79,6 +79,7 @@ async function login() {
                 document.getElementById('cliente-section').style.display = 'block';
                 await cargarReservasDelServidor();
                 await cargarHistorialDelServidor();
+                await cargarBloquesDisponibles();
             } else if (role === 'admin') {
                 document.getElementById('admin-section').style.display = 'block';
                 await cargarBloquesDelServidor();
@@ -132,6 +133,78 @@ function llenarHoras(selectId, fechaInputId) {
 
 document.getElementById('fecha').addEventListener('change', () => llenarHoras('hora', 'fecha'));
 document.getElementById('fecha-admin').addEventListener('change', () => llenarHoras('hora-admin', 'fecha-admin'));
+
+// Cargar bloques disponibles para sincronizar dropdowns
+let bloquesDisponibles = [];
+
+async function cargarBloquesDisponibles() {
+    try {
+        const response = await fetch(`${API_URL}/bloques`);
+        bloquesDisponibles = await response.json();
+        console.log('Bloques cargados:', bloquesDisponibles);
+        actualizarDropdownsCliente();
+    } catch (error) {
+        console.error('Error al cargar bloques:', error);
+    }
+}
+
+function actualizarDropdownsCliente() {
+    const actividadSelect = document.getElementById('actividad');
+    const fechaSelect = document.getElementById('fecha');
+    const horaSelect = document.getElementById('hora');
+    const entrenadorSelect = document.getElementById('entrenador');
+    
+    if (!bloquesDisponibles || bloquesDisponibles.length === 0) {
+        console.log('No hay bloques disponibles aún');
+        return;
+    }
+    
+    const actividadVal = actividadSelect.value;
+    const fechaVal = fechaSelect.value;
+    const entrenadorVal = entrenadorSelect.value;
+    
+    console.log('Actualizando dropdowns con:', { actividadVal, fechaVal, entrenadorVal });
+    
+    // Filtrar bloques según selecciones
+    let bloquesFiltrados = bloquesDisponibles.filter(b => b.cupos_disponibles > 0);
+    
+    if (actividadVal) {
+        bloquesFiltrados = bloquesFiltrados.filter(b => b.actividad === actividadVal);
+    }
+    if (fechaVal) {
+        bloquesFiltrados = bloquesFiltrados.filter(b => b.fecha === fechaVal);
+    }
+    if (entrenadorVal) {
+        bloquesFiltrados = bloquesFiltrados.filter(b => b.nombre_entrenador === entrenadorVal);
+    }
+    
+    console.log('Bloques filtrados:', bloquesFiltrados);
+    
+    // Actualizar opciones de hora basado en bloques disponibles
+    // Solo necesitamos actividad, fecha y entrenador para filtrar horas
+    if (actividadVal && fechaVal && entrenadorVal) {
+        const horasDisponibles = [...new Set(bloquesFiltrados.map(b => b.hora.substring(0, 5)))];
+        console.log('Horas disponibles:', horasDisponibles);
+        horaSelect.innerHTML = '';
+        if (horasDisponibles.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No hay horas disponibles';
+            horaSelect.appendChild(option);
+        } else {
+            horasDisponibles.sort().forEach(h => {
+                const option = document.createElement('option');
+                option.value = h;
+                option.textContent = h;
+                horaSelect.appendChild(option);
+            });
+        }
+    }
+}
+
+document.getElementById('actividad').addEventListener('change', actualizarDropdownsCliente);
+document.getElementById('fecha').addEventListener('change', actualizarDropdownsCliente);
+document.getElementById('entrenador').addEventListener('change', actualizarDropdownsCliente);
 
 window.addEventListener('load', () => {
     document.getElementById('fecha').value = hoyStr;
@@ -275,38 +348,60 @@ async function reservarClase() {
     const hora = document.getElementById('hora').value;
     const entrenador = document.getElementById('entrenador').value;
 
+    // Validar que todos los campos estén completos
+    if (!actividad) {
+        showToast('❌ Por favor selecciona una actividad');
+        return;
+    }
+    if (!fecha) {
+        showToast('❌ Por favor selecciona una fecha');
+        return;
+    }
+    if (!hora || hora === '' || hora === 'No hay horas disponibles') {
+        showToast('❌ No hay horas disponibles para la combinación seleccionada. Intenta con otra fecha.');
+        return;
+    }
+    if (!entrenador) {
+        showToast('❌ Por favor selecciona un entrenador');
+        return;
+    }
+
     try {
-        // Buscar el cupo correspondiente
-        const response = await fetch(`${API_URL}/cupos`);
-        const cupos = await response.json();
+        console.log('Intentando reservar:', { actividad, fecha, hora, entrenador });
         
-        const cupoSeleccionado = cupos.find(c => 
-            c.fecha === fecha && 
-            c.hora.substring(0, 5) === hora && 
-            c.entrenador_nombre === entrenador &&
-            c.actividad === actividad
+        // Buscar el bloque correspondiente en los bloques ya cargados
+        const bloqueSeleccionado = bloquesDisponibles.find(b => 
+            b.fecha === fecha && 
+            b.hora.substring(0, 5) === hora && 
+            b.nombre_entrenador === entrenador &&
+            b.actividad === actividad
         );
 
-        if (!cupoSeleccionado) {
-            showToast('❌ Error: No se encontró el cupo seleccionado');
+        console.log('Bloque encontrado:', bloqueSeleccionado);
+
+        if (!bloqueSeleccionado) {
+            showToast('❌ No se encontró la clase. Por favor intenta con una fecha que tenga clases disponibles (ej: 25-10-2025)');
             return;
         }
 
         // Guardar datos de la reserva en sessionStorage
         const datosReserva = {
             usuario_id: currentUserId,
-            cupo_id: cupoSeleccionado.id,
+            bloque_id: bloqueSeleccionado.id,
             fecha: fecha,
             hora: hora,
             entrenador: entrenador,
             actividad: actividad,
-            precio: '$1 CLP' // Puedes hacer esto dinámico si es necesario
+            precio: '$1 CLP'
         };
 
+        console.log('Guardando datos en sessionStorage:', datosReserva);
         sessionStorage.setItem('datosReserva', JSON.stringify(datosReserva));
+        console.log('Datos guardados, redirigiendo...');
         
         // Redirigir a la página de confirmación
         window.location.href = '/confirmar-reserva.html';
+        console.log('Después de asignar location.href');
         
     } catch (error) {
         console.error('Error:', error);

@@ -532,6 +532,13 @@ function cerrarModalCancelacion() {
     reservaACancelar = null;
 }
 
+function cerrarTodosLosModales() {
+    document.getElementById('modal-cancelacion').style.display = 'none';
+    document.getElementById('modal-reagendar').style.display = 'none';
+    reservaACancelar = null;
+    showToast('Operación cancelada');
+}
+
 async function confirmarReembolso() {
     if (!reservaACancelar) {
         showToast('Error: No hay reserva seleccionada');
@@ -566,7 +573,7 @@ async function confirmarReembolso() {
     }
 }
 
-function mostrarReagendar() {
+async function mostrarReagendar() {
     // Ocultar modal de cancelación y mostrar modal de reagendar
     document.getElementById('modal-cancelacion').style.display = 'none';
     document.getElementById('modal-reagendar').style.display = 'block';
@@ -581,8 +588,27 @@ function mostrarReagendar() {
         document.getElementById('reagendar-actividad').value = reservaACancelar.actividad;
     }
     
+    // Cargar entrenadores dinámicamente
+    try {
+        const response = await fetch(`${API_URL}/entrenadores`);
+        const entrenadores = await response.json();
+        
+        const selectEntrenador = document.getElementById('reagendar-entrenador');
+        selectEntrenador.innerHTML = '';
+        
+        entrenadores.forEach(e => {
+            const option = document.createElement('option');
+            option.value = e.nombre;
+            option.textContent = `${e.nombre}${e.especialidad ? ' - ' + e.especialidad : ''}`;
+            selectEntrenador.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error al cargar entrenadores:', error);
+    }
+    
     // Configurar el listener para el cambio de fecha
     const fechaInput = document.getElementById('reagendar-fecha');
+    fechaInput.removeEventListener('change', llenarHorasReagendar); // Remover listener anterior
     fechaInput.addEventListener('change', () => llenarHorasReagendar());
 }
 
@@ -639,12 +665,12 @@ async function confirmarReagendar() {
         );
         
         if (!bloqueNuevo) {
-            showToast('❌ No hay cupos disponibles para esa fecha/hora');
+            showToast('❌ No existe ese horario. Tu reserva actual NO se ha cancelado. Intenta otra fecha/hora.');
             return;
         }
         
         if (bloqueNuevo.cupos_disponibles <= 0) {
-            showToast('❌ No quedan cupos disponibles para ese horario');
+            showToast('❌ No hay cupos disponibles. Tu reserva actual NO se ha cancelado. Intenta otro horario.');
             return;
         }
         

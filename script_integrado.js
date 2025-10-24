@@ -276,48 +276,38 @@ async function reservarClase() {
     const entrenador = document.getElementById('entrenador').value;
 
     try {
-        // Llamar al endpoint de Webpay para crear la transacción
-        showToast('💳 Procesando pago...');
+        // Buscar el cupo correspondiente
+        const response = await fetch(`${API_URL}/cupos`);
+        const cupos = await response.json();
         
-        const response = await fetch(`${API_URL}/webpay/crear`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                user_id: currentUserId,
-                actividad,
-                fecha,
-                hora,
-                entrenador
-            })
-        });
+        const cupoSeleccionado = cupos.find(c => 
+            c.fecha === fecha && 
+            c.hora.substring(0, 5) === hora && 
+            c.entrenador_nombre === entrenador &&
+            c.actividad === actividad
+        );
 
-        const data = await response.json();
-
-        if (data.success) {
-            // Mostrar información del pago
-            showToast(`💰 Redirigiendo a Webpay... Monto: $${data.amount.toLocaleString('es-CL')} CLP`);
-            
-            // Esperar 1.5 segundos y redirigir a Webpay
-            setTimeout(() => {
-                // Crear formulario para enviar a Webpay
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = data.url;
-                
-                const tokenInput = document.createElement('input');
-                tokenInput.type = 'hidden';
-                tokenInput.name = 'token_ws';
-                tokenInput.value = data.token;
-                
-                form.appendChild(tokenInput);
-                document.body.appendChild(form);
-                form.submit();
-            }, 1500);
-        } else {
-            showToast('❌ Error al crear pago: ' + (data.error || 'Intenta de nuevo'));
+        if (!cupoSeleccionado) {
+            showToast('❌ Error: No se encontró el cupo seleccionado');
+            return;
         }
+
+        // Guardar datos de la reserva en sessionStorage
+        const datosReserva = {
+            usuario_id: currentUserId,
+            cupo_id: cupoSeleccionado.id,
+            fecha: fecha,
+            hora: hora,
+            entrenador: entrenador,
+            actividad: actividad,
+            precio: '$1 CLP' // Puedes hacer esto dinámico si es necesario
+        };
+
+        sessionStorage.setItem('datosReserva', JSON.stringify(datosReserva));
+        
+        // Redirigir a la página de confirmación
+        window.location.href = '/confirmar-reserva.html';
+        
     } catch (error) {
         console.error('Error:', error);
         showToast('❌ Error de conexión con el servidor');

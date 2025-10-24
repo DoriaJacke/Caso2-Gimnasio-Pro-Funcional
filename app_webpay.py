@@ -776,6 +776,10 @@ def pago_exitoso():
 def pago_fallido():
     return send_from_directory('.', 'pago-fallido.html')
 
+@app.route('/confirmar-reserva.html')
+def confirmar_reserva():
+    return send_from_directory('.', 'confirmar-reserva.html')
+
 @app.route('/style.css')
 def serve_css():
     return send_from_directory('.', 'style.css')

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmar Reserva - Gimnasio Pro Funcional</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .confirmar-container {
+            max-width: 700px;
+            margin: 50px auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .confirmar-header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .confirmar-header h1 {
+            color: #e74c3c;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .detalle-reserva {
+            background: #f8f9fa;
+            border-left: 4px solid #e74c3c;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+        }
+
+        .detalle-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .detalle-item:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #e74c3c;
+            margin-top: 10px;
+        }
+
+        .detalle-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .detalle-valor {
+            color: #333;
+        }
+
+        .terminos-container {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .terminos-container h3 {
+            color: #856404;
+            margin-top: 0;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+
+        .terminos-lista {
+            list-style: none;
+            padding: 0;
+        }
+
+        .terminos-lista li {
+            padding: 8px 0 8px 25px;
+            position: relative;
+            color: #856404;
+            line-height: 1.6;
+        }
+
+        .terminos-lista li:before {
+            content: "⚠";
+            position: absolute;
+            left: 0;
+            font-size: 1.2em;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-container label {
+            cursor: pointer;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .botones-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn-confirmar, .btn-cancelar {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-confirmar {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn-confirmar:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn-confirmar:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-cancelar {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-cancelar:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .precio-destacado {
+            font-size: 1.5em !important;
+            color: #27ae60 !important;
+        }
+
+        @media (max-width: 768px) {
+            .confirmar-container {
+                margin: 20px;
+                padding: 25px;
+            }
+
+            .botones-container {
+                flex-direction: column;
+            }
+
+            .btn-confirmar, .btn-cancelar {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="confirmar-container">
+        <div class="confirmar-header">
+            <h1>🛒 Confirmar Reserva</h1>
+            <p>Revisa los detalles antes de proceder al pago</p>
+        </div>
+
+        <div class="detalle-reserva">
+            <div class="detalle-item">
+                <span class="detalle-label">📅 Fecha:</span>
+                <span class="detalle-valor" id="fecha-reserva">-</span>
+            </div>
+            <div class="detalle-item">
+                <span class="detalle-label">🕐 Hora:</span>
+                <span class="detalle-valor" id="hora-reserva">-</span>
+            </div>
+            <div class="detalle-item">
+                <span class="detalle-label">👤 Entrenador:</span>
+                <span class="detalle-valor" id="entrenador-reserva">-</span>
+            </div>
+            <div class="detalle-item">
+                <span class="detalle-label">🏋️ Actividad:</span>
+                <span class="detalle-valor" id="actividad-reserva">-</span>
+            </div>
+            <div class="detalle-item">
+                <span class="detalle-label">💰 Total a Pagar:</span>
+                <span class="detalle-valor precio-destacado" id="precio-reserva">$1 CLP</span>
+            </div>
+        </div>
+
+        <div class="terminos-container">
+            <h3>⚠️ Términos y Condiciones</h3>
+            <ul class="terminos-lista">
+                <li><strong>Cancelación:</strong> Si necesitas cancelar o no puedes asistir, debes avisar con <strong>al menos 2 horas de anticipación</strong>.</li>
+                <li><strong>Reembolsos:</strong> Las cancelaciones realizadas con menos de 2 horas de anticipación <strong>NO serán reembolsadas</strong>.</li>
+                <li><strong>Puntualidad:</strong> Llega 5 minutos antes del inicio de tu sesión. Si llegas más de 10 minutos tarde, se considerará inasistencia sin reembolso.</li>
+                <li><strong>Validez:</strong> La reserva es válida únicamente para la fecha y hora seleccionada. No es transferible.</li>
+                <li><strong>Equipo:</strong> Trae tu propia toalla y botella de agua. El uso de calzado deportivo es obligatorio.</li>
+            </ul>
+        </div>
+
+        <div class="checkbox-container">
+            <input type="checkbox" id="aceptar-terminos">
+            <label for="aceptar-terminos">He leído y acepto los términos y condiciones</label>
+        </div>
+
+        <div class="botones-container">
+            <button class="btn-cancelar" onclick="cancelarReserva()">❌ Cancelar</button>
+            <button class="btn-confirmar" id="btn-pagar" onclick="procederAlPago()" disabled>
+                💳 Confirmar y Pagar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Cargar datos de la reserva desde sessionStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            const datosReserva = JSON.parse(sessionStorage.getItem('datosReserva') || '{}');
+            
+            if (!datosReserva.cupo_id) {
+                alert('No hay datos de reserva. Serás redirigido al inicio.');
+                window.location.href = '/';
+                return;
+            }
+
+            // Mostrar datos en la página
+            document.getElementById('fecha-reserva').textContent = datosReserva.fecha || '-';
+            document.getElementById('hora-reserva').textContent = datosReserva.hora || '-';
+            document.getElementById('entrenador-reserva').textContent = datosReserva.entrenador || '-';
+            document.getElementById('actividad-reserva').textContent = datosReserva.actividad || '-';
+            document.getElementById('precio-reserva').textContent = datosReserva.precio || '$1 CLP';
+
+            // Habilitar botón de pago cuando se acepten términos
+            document.getElementById('aceptar-terminos').addEventListener('change', (e) => {
+                document.getElementById('btn-pagar').disabled = !e.target.checked;
+            });
+        });
+
+        function cancelarReserva() {
+            if (confirm('¿Estás seguro de que quieres cancelar esta reserva?')) {
+                sessionStorage.removeItem('datosReserva');
+                window.location.href = '/';
+            }
+        }
+
+        async function procederAlPago() {
+            const datosReserva = JSON.parse(sessionStorage.getItem('datosReserva') || '{}');
+            
+            if (!datosReserva.cupo_id) {
+                alert('Error: No hay datos de reserva');
+                return;
+            }
+
+            // Deshabilitar botón para evitar doble click
+            const btnPagar = document.getElementById('btn-pagar');
+            btnPagar.disabled = true;
+            btnPagar.textContent = '⏳ Procesando...';
+
+            try {
+                const response = await fetch('http://localhost:5000/api/webpay/crear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        usuario_id: datosReserva.usuario_id,
+                        cupo_id: datosReserva.cupo_id
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.url && data.token) {
+                    // Limpiar datos temporales
+                    sessionStorage.removeItem('datosReserva');
+                    
+                    // Crear formulario para redireccionar a Webpay
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = data.url;
+                    
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'token_ws';
+                    input.value = data.token;
+                    
+                    form.appendChild(input);
+                    document.body.appendChild(form);
+                    form.submit();
+                } else {
+                    throw new Error(data.error || 'Error al crear el pago');
+                }
+            } catch (error) {
+                alert('Error al procesar el pago: ' + error.message);
+                btnPagar.disabled = false;
+                btnPagar.textContent = '💳 Confirmar y Pagar';
+            }
+        }
+    </script>
+</body>
+</html>
+

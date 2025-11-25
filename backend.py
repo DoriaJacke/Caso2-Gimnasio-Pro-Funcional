@@ -18,16 +18,18 @@ from transbank.common.integration_type import IntegrationType
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
-# Crear instancia de Transaction según el ambiente
+# Crear instancia de Transaction y configurar según el ambiente
+tx_handler = Transaction()
+
 if webpay_config.WEBPAY_ENVIRONMENT == 'INTEGRATION':
     # Ambiente de integración con credenciales de prueba
-    tx_handler = Transaction.build_for_integration(
+    tx_handler.configure_for_integration(
         "597055555532",
         "579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C"
     )
 else:
     # Ambiente de producción con tus credenciales reales
-    tx_handler = Transaction.build_for_production(
+    tx_handler.configure_for_production(
         webpay_config.WEBPAY_COMMERCE_CODE,
         webpay_config.WEBPAY_API_KEY
     )
@@ -1340,6 +1342,11 @@ def serve_script_integrado():
 @app.route('/script.js')
 def serve_script():
     return send_from_directory('.', 'script.js')
+
+# Endpoint silencioso para peticiones de telemetría de VS Code
+@app.route('/performance')
+def performance():
+    return '', 204
 
 # ==================== RUTA PRINCIPAL ====================
 @app.route('/')

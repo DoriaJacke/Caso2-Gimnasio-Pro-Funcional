@@ -5,4 +5,5 @@ python-dotenv==1.0.0
 cryptography==41.0.7
 transbank-sdk==4.0.0
 twilio==9.8.7
-
+flask-swagger-ui==4.11.1
+flasgger==0.9.7.1

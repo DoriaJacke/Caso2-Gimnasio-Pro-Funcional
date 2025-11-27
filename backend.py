@@ -1069,6 +1069,40 @@ def crear_bloque():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/bloques/<int:bloque_id>', methods=['DELETE'])
+def eliminar_bloque(bloque_id):
+    """Eliminar un bloque de horario"""
+    try:
+        connection = get_db_connection()
+        cur = connection.cursor()
+        
+        # Verificar si hay reservas asociadas
+        cur.execute("""
+            SELECT COUNT(*) as total FROM reservas r
+            INNER JOIN bloques b ON r.fecha = b.fecha AND r.hora = b.hora AND r.entrenador_id = b.entrenador_id
+            WHERE b.id = %s AND r.estado = 'activa'
+        """, (bloque_id,))
+        
+        result = cur.fetchone()
+        if result and result['total'] > 0:
+            cur.close()
+            connection.close()
+            return jsonify({'error': 'No se puede eliminar un bloque con reservas activas'}), 400
+        
+        # Eliminar el bloque
+        cur.execute("DELETE FROM bloques WHERE id = %s", (bloque_id,))
+        connection.commit()
+        cur.close()
+        connection.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Bloque eliminado correctamente'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ==================== ENTRENADORES ====================
 @app.route('/api/entrenadores', methods=['GET'])
 def get_entrenadores():
@@ -1081,6 +1115,37 @@ def get_entrenadores():
         connection.close()
         
         return jsonify(entrenadores), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/entrenadores/<int:entrenador_id>', methods=['PUT'])
+def actualizar_entrenador(entrenador_id):
+    """Actualizar especialidad del entrenador"""
+    try:
+        data = request.json
+        especialidad = data.get('especialidad')
+        
+        if not especialidad:
+            return jsonify({'error': 'Especialidad es requerida'}), 400
+        
+        connection = get_db_connection()
+        cur = connection.cursor()
+        
+        cur.execute("""
+            UPDATE entrenadores 
+            SET especialidad = %s 
+            WHERE id = %s
+        """, (especialidad, entrenador_id))
+        
+        connection.commit()
+        cur.close()
+        connection.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Especialidad actualizada correctamente'
+        }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

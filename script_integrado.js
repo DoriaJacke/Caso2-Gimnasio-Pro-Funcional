@@ -172,7 +172,7 @@ async function login() {
                 await cargarEntrenadoresParaAdmin();
             } else if (role === 'entrenador') {
                 document.getElementById('entrenador-section').style.display = 'block';
-                await mostrarAlumnosDelServidor(data.username);
+                await mostrarAlumnosDelServidor(data.nombre, data.apellido);
             }
             
             showToast(`✅ Bienvenido ${data.nombre || email}!`);
@@ -1105,3 +1105,221 @@ function showToast(msg) {
     setTimeout(() => div.remove(), 3000);
 }
 
+// === VISTA ENTRENADOR ===
+let currentEntrenadorData = null;
+
+async function mostrarAlumnosDelServidor(nombre, apellido) {
+    try {
+        const nombreCompleto = `${nombre} ${apellido}`;
+        
+        // Cargar información del entrenador
+        const responseEntrenador = await fetch(`${API_URL}/entrenadores`);
+        const entrenadores = await responseEntrenador.json();
+        const entrenador = entrenadores.find(e => e.nombre === nombreCompleto);
+        
+        if (entrenador) {
+            currentEntrenadorData = entrenador;
+        } else {
+            console.warn('Entrenador no encontrado en la tabla entrenadores');
+            currentEntrenadorData = {
+                nombre: nombreCompleto,
+                especialidad: 'Por definir'
+            };
+        }
+        
+        // Mostrar por defecto la sección de perfil
+        mostrarPerfilEntrenador();
+        
+        // Cargar alumnos
+        if (entrenador) {
+            const response = await fetch(`${API_URL}/entrenador/${encodeURIComponent(entrenador.nombre)}/alumnos`);
+            const data = await response.json();
+            const lista = document.getElementById('lista-alumnos');
+            lista.innerHTML = '';
+            
+            if (data.length === 0) {
+                lista.innerHTML = '<li>No tienes alumnos asignados aún</li>';
+            } else {
+                data.forEach(alumno => {
+                    const li = document.createElement('li');
+                    li.textContent = alumno.username;
+                    lista.appendChild(li);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error al cargar información del entrenador');
+    }
+}
+
+function mostrarPerfilEntrenador() {
+    // Ocultar todas las secciones
+    document.getElementById('perfil-entrenador').style.display = 'none';
+    document.getElementById('horarios-entrenador').style.display = 'none';
+    document.getElementById('alumnos-entrenador').style.display = 'none';
+    
+    // Mostrar perfil
+    document.getElementById('perfil-entrenador').style.display = 'block';
+    
+    // Cargar datos del entrenador
+    if (currentEntrenadorData) {
+        document.getElementById('entrenador-nombre-completo').value = currentEntrenadorData.nombre;
+        document.getElementById('entrenador-especialidad').value = currentEntrenadorData.especialidad || '';
+    }
+}
+
+function mostrarHorariosEntrenador() {
+    // Ocultar todas las secciones
+    document.getElementById('perfil-entrenador').style.display = 'none';
+    document.getElementById('horarios-entrenador').style.display = 'none';
+    document.getElementById('alumnos-entrenador').style.display = 'none';
+    
+    // Mostrar horarios
+    document.getElementById('horarios-entrenador').style.display = 'block';
+    
+    // Establecer fecha mínima
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('horario-fecha').min = hoy;
+    document.getElementById('horario-fecha').value = hoy;
+    
+    // Cargar horarios existentes
+    cargarHorariosEntrenador();
+}
+
+function mostrarAlumnosEntrenador() {
+    // Ocultar todas las secciones
+    document.getElementById('perfil-entrenador').style.display = 'none';
+    document.getElementById('horarios-entrenador').style.display = 'none';
+    document.getElementById('alumnos-entrenador').style.display = 'none';
+    
+    // Mostrar alumnos
+    document.getElementById('alumnos-entrenador').style.display = 'block';
+}
+
+async function actualizarEspecialidad() {
+    try {
+        const especialidad = document.getElementById('entrenador-especialidad').value.trim();
+        
+        if (!especialidad) {
+            showToast('❌ Por favor ingresa una especialidad');
+            return;
+        }
+        
+        const response = await fetch(`${API_URL}/entrenadores/${currentEntrenadorData.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ especialidad })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            currentEntrenadorData.especialidad = especialidad;
+            showToast('✅ Especialidad actualizada correctamente');
+        } else {
+            showToast(`❌ ${data.error || 'Error al actualizar especialidad'}`);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error de conexión con el servidor');
+    }
+}
+
+async function agregarHorarioEntrenador() {
+    try {
+        const actividad = document.getElementById('horario-actividad').value;
+        const fecha = document.getElementById('horario-fecha').value;
+        const hora = document.getElementById('horario-hora').value;
+        const cupos = document.getElementById('horario-cupos').value;
+        
+        if (!fecha || !hora || !cupos) {
+            showToast('❌ Completa todos los campos');
+            return;
+        }
+        
+        const response = await fetch(`${API_URL}/bloques`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                actividad,
+                fecha,
+                hora,
+                entrenador: currentEntrenadorData.nombre,
+                cupos: parseInt(cupos)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showToast('✅ Horario agregado correctamente');
+            cargarHorariosEntrenador();
+            // Limpiar formulario
+            document.getElementById('horario-cupos').value = 10;
+        } else {
+            showToast(`❌ ${data.error || 'Error al agregar horario'}`);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error de conexión con el servidor');
+    }
+}
+
+async function cargarHorariosEntrenador() {
+    try {
+        if (!currentEntrenadorData) return;
+        
+        const response = await fetch(`${API_URL}/bloques?entrenador=${encodeURIComponent(currentEntrenadorData.nombre)}`);
+        const bloques = await response.json();
+        
+        const container = document.getElementById('lista-horarios-entrenador');
+        container.innerHTML = '';
+        
+        // Filtrar solo bloques futuros
+        const hoy = new Date().toISOString().split('T')[0];
+        const bloquesFuturos = bloques.filter(b => b.fecha >= hoy);
+        
+        if (bloquesFuturos.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#666;">No tienes horarios registrados aún</p>';
+            return;
+        }
+        
+        bloquesFuturos.forEach(bloque => {
+            const div = document.createElement('div');
+            div.className = 'horario-item';
+            div.innerHTML = `
+                <h4>${bloque.actividad}</h4>
+                <p>📅 Fecha: ${bloque.fecha}</p>
+                <p>🕐 Hora: ${bloque.hora.substring(0, 5)}</p>
+                <p>👥 Cupos: ${bloque.cupos_disponibles} / ${bloque.cupos_totales}</p>
+                <button onclick="eliminarHorarioEntrenador(${bloque.id})">🗑️ Eliminar</button>
+            `;
+            container.appendChild(div);
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error al cargar horarios');
+    }
+}
+
+async function eliminarHorarioEntrenador(bloqueId) {
+    if (!confirm('¿Estás seguro de eliminar este horario?')) return;
+    
+    try {
+        const response = await fetch(`${API_URL}/bloques/${bloqueId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showToast('✅ Horario eliminado correctamente');
+            cargarHorariosEntrenador();
+        } else {
+            const data = await response.json();
+            showToast(`❌ ${data.error || 'Error al eliminar horario'}`);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('❌ Error de conexión con el servidor');
+    }
+}

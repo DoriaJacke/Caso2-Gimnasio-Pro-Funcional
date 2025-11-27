@@ -110,6 +110,20 @@ def registro():
         connection.commit()
         user_id = cur.lastrowid
         
+        # Si el rol es 'entrenador', agregarlo también a la tabla entrenadores
+        if role == 'entrenador':
+            nombre_completo = f"{nombre} {apellido}"
+            try:
+                cur.execute("""
+                    INSERT INTO entrenadores (nombre, especialidad)
+                    VALUES (%s, %s)
+                """, (nombre_completo, 'Por definir'))
+                connection.commit()
+                print(f"✓ Entrenador '{nombre_completo}' agregado a la tabla entrenadores")
+            except Exception as e:
+                print(f"⚠ Error al agregar a tabla entrenadores: {e}")
+                # No fallar el registro si hay error en entrenadores
+        
         cur.close()
         connection.close()
         

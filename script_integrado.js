@@ -311,11 +311,36 @@ document.getElementById('actividad').addEventListener('change', actualizarDropdo
 document.getElementById('fecha').addEventListener('change', actualizarDropdownsCliente);
 document.getElementById('entrenador').addEventListener('change', actualizarDropdownsCliente);
 
+// Cargar entrenadores dinámicamente en el dropdown
+async function cargarEntrenadoresCliente() {
+    try {
+        const response = await fetch(`${API_URL}/entrenadores`);
+        const entrenadores = await response.json();
+        
+        const selectEntrenador = document.getElementById('entrenador');
+        // Mantener las primeras dos opciones por defecto
+        const optionDefault = '<option value="">-- Selecciona entrenador --</option>';
+        const optionSolo = '<option value="Sin entrenador">🏋️ Entrenar solo (Sin entrenador)</option>';
+        
+        let optionsHTML = optionDefault + optionSolo;
+        
+        entrenadores.forEach(e => {
+            optionsHTML += `<option value="${e.nombre}">${e.nombre}${e.especialidad && e.especialidad !== 'Por definir' ? ' - ' + e.especialidad : ''}</option>`;
+        });
+        
+        selectEntrenador.innerHTML = optionsHTML;
+        console.log('✓ Entrenadores cargados:', entrenadores.length);
+    } catch (error) {
+        console.error('Error al cargar entrenadores:', error);
+    }
+}
+
 window.addEventListener('load', () => {
     document.getElementById('fecha').value = hoyStr;
     document.getElementById('fecha-admin').value = hoyStr;
     llenarHoras('hora', 'fecha');
     llenarHoras('hora-admin', 'fecha-admin');
+    cargarEntrenadoresCliente(); // Cargar entrenadores al iniciar
 });
 
 // === CLIENTE ===

@@ -4,6 +4,7 @@ Gimnasio Pro Funcional
 """
 from flask import Flask, request, jsonify, redirect, send_from_directory
 from flask_cors import CORS
+from flasgger import Swagger, swag_from
 import pymysql
 from datetime import datetime
 import os
@@ -18,16 +19,61 @@ from transbank.common.integration_type import IntegrationType
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
-# Crear instancia de Transaction según el ambiente
+# Configuración de Swagger
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": 'apispec',
+            "route": '/apispec.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/docs"
+}
+
+swagger_template = {
+    "swagger": "2.0",
+    "info": {
+        "title": "Gimnasio Pro Funcional API",
+        "description": "API REST para sistema de reservas de gimnasio con integración de Webpay Plus",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Gimnasio Pro Funcional",
+            "email": "contacto@gimnasiofuncional.cl"
+        }
+    },
+    "host": "127.0.0.1:5000",
+    "basePath": "/api",
+    "schemes": ["http"],
+    "tags": [
+        {"name": "Autenticación", "description": "Endpoints de registro y login"},
+        {"name": "Usuarios", "description": "Gestión de usuarios"},
+        {"name": "Reservas", "description": "Gestión de reservas de entrenamiento"},
+        {"name": "Bloques", "description": "Gestión de bloques horarios"},
+        {"name": "Entrenadores", "description": "Gestión de entrenadores"},
+        {"name": "Pagos", "description": "Integración con Webpay Plus"},
+        {"name": "Cupos", "description": "Disponibilidad de cupos"}
+    ]
+}
+
+swagger = Swagger(app, config=swagger_config, template=swagger_template)
+
+# Crear instancia de Transaction y configurar según el ambiente
+tx_handler = Transaction()
+
 if webpay_config.WEBPAY_ENVIRONMENT == 'INTEGRATION':
     # Ambiente de integración con credenciales de prueba
-    tx_handler = Transaction.build_for_integration(
+    tx_handler.configure_for_integration(
         "597055555532",
         "579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C"
     )
 else:
     # Ambiente de producción con tus credenciales reales
-    tx_handler = Transaction.build_for_production(
+    tx_handler.configure_for_production(
         webpay_config.WEBPAY_COMMERCE_CODE,
         webpay_config.WEBPAY_API_KEY
     )
@@ -66,7 +112,73 @@ def obtener_precio_reserva():
 # ==================== USUARIOS ====================
 @app.route('/api/registro', methods=['POST'])
 def registro():
-    """Registro de nuevos usuarios"""
+    """
+    Registro de nuevos usuarios
+    ---
+    tags:
+      - Autenticación
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - nombre
+            - apellido
+            - email
+            - telefono
+            - username
+            - password
+            - role
+          properties:
+            nombre:
+              type: string
+              example: "Juan"
+            apellido:
+              type: string
+              example: "Pérez"
+            email:
+              type: string
+              format: email
+              example: "juan.perez@gmail.com"
+            telefono:
+              type: string
+              example: "912345678"
+            username:
+              type: string
+              example: "juanperez"
+            password:
+              type: string
+              example: "password123"
+            fecha_nacimiento:
+              type: string
+              format: date
+              example: "1990-01-15"
+            role:
+              type: string
+              enum: [cliente, entrenador, admin]
+              example: "cliente"
+    responses:
+      201:
+        description: Usuario registrado exitosamente
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            user_id:
+              type: integer
+            message:
+              type: string
+      400:
+        description: Error de validación
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+    """
     try:
         data = request.json
         nombre = data.get('nombre')
@@ -108,6 +220,20 @@ def registro():
         connection.commit()
         user_id = cur.lastrowid
         
+        # Si el rol es 'entrenador', agregarlo también a la tabla entrenadores
+        if role == 'entrenador':
+            nombre_completo = f"{nombre} {apellido}"
+            try:
+                cur.execute("""
+                    INSERT INTO entrenadores (nombre, especialidad)
+                    VALUES (%s, %s)
+                """, (nombre_completo, 'Por definir'))
+                connection.commit()
+                print(f"✓ Entrenador '{nombre_completo}' agregado a la tabla entrenadores")
+            except Exception as e:
+                print(f"⚠ Error al agregar a tabla entrenadores: {e}")
+                # No fallar el registro si hay error en entrenadores
+        
         cur.close()
         connection.close()
         
@@ -122,6 +248,58 @@ def registro():
 
 @app.route('/api/login', methods=['POST'])
 def login():
+    """
+    Login de usuarios
+    ---
+    tags:
+      - Autenticación
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - email
+            - password
+            - role
+          properties:
+            email:
+              type: string
+              format: email
+              example: "juan.perez@gmail.com"
+            password:
+              type: string
+              example: "password123"
+            role:
+              type: string
+              enum: [cliente, entrenador, admin]
+              example: "cliente"
+    responses:
+      200:
+        description: Login exitoso
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            user_id:
+              type: integer
+            username:
+              type: string
+            email:
+              type: string
+            role:
+              type: string
+            nombre:
+              type: string
+            apellido:
+              type: string
+      401:
+        description: Credenciales incorrectas
+      400:
+        description: Datos faltantes
+    """
     try:
         data = request.json
         email = data.get('email')
@@ -414,6 +592,89 @@ def obtener_cupos_disponibles():
         return jsonify({
             'success': True,
             'cupos': cupos
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/usuarios', methods=['GET'])
+def listar_usuarios():
+    """
+    Obtener lista de todos los usuarios registrados
+    ---
+    tags:
+      - Usuarios
+    parameters:
+      - name: rol
+        in: query
+        type: string
+        required: false
+        enum: [cliente, entrenador, admin]
+        description: Filtrar usuarios por rol
+    responses:
+      200:
+        description: Lista de usuarios
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            total:
+              type: integer
+            usuarios:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  nombre:
+                    type: string
+                  apellido:
+                    type: string
+                  email:
+                    type: string
+                  telefono:
+                    type: string
+                  fecha_nacimiento:
+                    type: string
+                  rol:
+                    type: string
+                  fecha_registro:
+                    type: string
+      500:
+        description: Error del servidor
+    """
+    try:
+        connection = get_db_connection()
+        cur = connection.cursor()
+        
+        # Verificar si hay filtro por rol
+        rol_filtro = request.args.get('rol')
+        
+        if rol_filtro:
+            cur.execute("SELECT id, username, nombre, apellido, email, telefono, fecha_nacimiento, rol, fecha_registro FROM usuarios WHERE rol = %s ORDER BY fecha_registro DESC", (rol_filtro,))
+        else:
+            cur.execute("SELECT id, username, nombre, apellido, email, telefono, fecha_nacimiento, rol, fecha_registro FROM usuarios ORDER BY fecha_registro DESC")
+        
+        usuarios = cur.fetchall()
+        
+        # Convertir fechas a string
+        for usuario in usuarios:
+            if 'fecha_nacimiento' in usuario and usuario['fecha_nacimiento']:
+                usuario['fecha_nacimiento'] = str(usuario['fecha_nacimiento'])
+            if 'fecha_registro' in usuario and usuario['fecha_registro']:
+                usuario['fecha_registro'] = str(usuario['fecha_registro'])
+        
+        cur.close()
+        connection.close()
+        
+        return jsonify({
+            'success': True,
+            'total': len(usuarios),
+            'usuarios': usuarios
         }), 200
         
     except Exception as e:
@@ -786,6 +1047,46 @@ def confirmar_transaccion_webpay():
 # ==================== RESERVAS (CLIENTE) ====================
 @app.route('/api/reservas/<int:user_id>', methods=['GET'])
 def get_reservas(user_id):
+    """
+    Obtener reservas activas de un usuario
+    ---
+    tags:
+      - Reservas
+    parameters:
+      - name: user_id
+        in: path
+        type: integer
+        required: true
+        description: ID del usuario
+    responses:
+      200:
+        description: Lista de reservas activas
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              usuario_id:
+                type: integer
+              actividad:
+                type: string
+              fecha:
+                type: string
+                format: date
+              hora:
+                type: string
+                format: time
+              entrenador_id:
+                type: integer
+              nombre_entrenador:
+                type: string
+              estado:
+                type: string
+      500:
+        description: Error del servidor
+    """
     try:
         connection = get_db_connection()
         cur = connection.cursor()
@@ -946,18 +1247,57 @@ def get_cupos():
 @app.route('/api/bloques', methods=['GET'])
 def get_bloques():
     """
-    Obtiene lista de bloques disponibles con filtros opcionales
-    
-    Query Parameters:
-        - fecha (str, opcional): Filtra por fecha específica (YYYY-MM-DD)
-        - actividad (str, opcional): Filtra por actividad ('Cardio' o 'Fuerza')
-        - entrenador (str, opcional): Filtra por nombre del entrenador
-        
-    Returns:
-        JSON: Lista de bloques con información del entrenador
-        
-    Example:
-        GET /api/bloques?fecha=2025-10-28&actividad=Cardio
+    Obtiene lista de bloques horarios disponibles
+    ---
+    tags:
+      - Bloques
+    parameters:
+      - name: fecha
+        in: query
+        type: string
+        required: false
+        description: Filtrar por fecha específica (YYYY-MM-DD)
+        example: "2025-11-27"
+      - name: actividad
+        in: query
+        type: string
+        required: false
+        enum: [Cardio, Fuerza]
+        description: Filtrar por tipo de actividad
+      - name: entrenador
+        in: query
+        type: string
+        required: false
+        description: Filtrar por nombre del entrenador
+        example: "Ricardo Meruane"
+    responses:
+      200:
+        description: Lista de bloques horarios
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              actividad:
+                type: string
+              fecha:
+                type: string
+                format: date
+              hora:
+                type: string
+                format: time
+              entrenador_id:
+                type: integer
+              nombre_entrenador:
+                type: string
+              cupos_totales:
+                type: integer
+              cupos_disponibles:
+                type: integer
+      500:
+        description: Error del servidor
     """
     try:
         # Obtener parámetros de filtro opcionales
@@ -1013,6 +1353,51 @@ def get_bloques():
 
 @app.route('/api/bloques', methods=['POST'])
 def crear_bloque():
+    """
+    Crear un nuevo bloque horario
+    ---
+    tags:
+      - Bloques
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - actividad
+            - fecha
+            - hora
+            - entrenador
+            - cupos
+          properties:
+            actividad:
+              type: string
+              enum: [Cardio, Fuerza]
+              example: "Cardio"
+            fecha:
+              type: string
+              format: date
+              example: "2025-11-27"
+            hora:
+              type: string
+              format: time
+              example: "10:00:00"
+            entrenador:
+              type: string
+              example: "Ricardo Meruane"
+            cupos:
+              type: integer
+              minimum: 1
+              example: 10
+    responses:
+      201:
+        description: Bloque creado exitosamente
+      404:
+        description: Entrenador no encontrado
+      500:
+        description: Error del servidor
+    """
     try:
         data = request.json
         actividad = data.get('actividad')
@@ -1053,9 +1438,68 @@ def crear_bloque():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/bloques/<int:bloque_id>', methods=['DELETE'])
+def eliminar_bloque(bloque_id):
+    """Eliminar un bloque de horario"""
+    try:
+        connection = get_db_connection()
+        cur = connection.cursor()
+        
+        # Verificar si hay reservas asociadas
+        cur.execute("""
+            SELECT COUNT(*) as total FROM reservas r
+            INNER JOIN bloques b ON r.fecha = b.fecha AND r.hora = b.hora AND r.entrenador_id = b.entrenador_id
+            WHERE b.id = %s AND r.estado = 'activa'
+        """, (bloque_id,))
+        
+        result = cur.fetchone()
+        if result and result['total'] > 0:
+            cur.close()
+            connection.close()
+            return jsonify({'error': 'No se puede eliminar un bloque con reservas activas'}), 400
+        
+        # Eliminar el bloque
+        cur.execute("DELETE FROM bloques WHERE id = %s", (bloque_id,))
+        connection.commit()
+        cur.close()
+        connection.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Bloque eliminado correctamente'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # ==================== ENTRENADORES ====================
 @app.route('/api/entrenadores', methods=['GET'])
 def get_entrenadores():
+    """
+    Obtener lista de todos los entrenadores
+    ---
+    tags:
+      - Entrenadores
+    responses:
+      200:
+        description: Lista de entrenadores
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              nombre:
+                type: string
+              especialidad:
+                type: string
+              fecha_registro:
+                type: string
+                format: date-time
+      500:
+        description: Error del servidor
+    """
     try:
         connection = get_db_connection()
         cur = connection.cursor()
@@ -1065,6 +1509,66 @@ def get_entrenadores():
         connection.close()
         
         return jsonify(entrenadores), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/entrenadores/<int:entrenador_id>', methods=['PUT'])
+def actualizar_entrenador(entrenador_id):
+    """
+    Actualizar especialidad del entrenador
+    ---
+    tags:
+      - Entrenadores
+    parameters:
+      - name: entrenador_id
+        in: path
+        type: integer
+        required: true
+        description: ID del entrenador
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - especialidad
+          properties:
+            especialidad:
+              type: string
+              example: "CrossFit y Entrenamiento Funcional"
+    responses:
+      200:
+        description: Especialidad actualizada
+      400:
+        description: Especialidad requerida
+      500:
+        description: Error del servidor
+    """
+    try:
+        data = request.json
+        especialidad = data.get('especialidad')
+        
+        if not especialidad:
+            return jsonify({'error': 'Especialidad es requerida'}), 400
+        
+        connection = get_db_connection()
+        cur = connection.cursor()
+        
+        cur.execute("""
+            UPDATE entrenadores 
+            SET especialidad = %s 
+            WHERE id = %s
+        """, (especialidad, entrenador_id))
+        
+        connection.commit()
+        cur.close()
+        connection.close()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Especialidad actualizada correctamente'
+        }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1340,6 +1844,11 @@ def serve_script_integrado():
 @app.route('/script.js')
 def serve_script():
     return send_from_directory('.', 'script.js')
+
+# Endpoint silencioso para peticiones de telemetría de VS Code
+@app.route('/performance')
+def performance():
+    return '', 204
 
 # ==================== RUTA PRINCIPAL ====================
 @app.route('/')

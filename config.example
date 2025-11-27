@@ -1,0 +1,15 @@
+MYSQL_HOST = 'localhost'  # Cambia si tu MySQL está en otro servidor
+MYSQL_USER = 'root'       # Tu usuario de MySQL
+MYSQL_PASSWORD = 'Doria.007'  # Tu contraseña de MySQL
+MYSQL_DB = 'gimnasio_db'  # Nombre de la base de datos
+MYSQL_PORT = 3306         # Puerto de MySQL (por defecto 3306)
+
+# Configuración del servidor Flask
+DEBUG = True  # Cambiar a False en producción
+PORT = 5000   # Puerto del servidor
+
+WEBPAY_ENVIRONMENT = "INTEGRATION"
+WEBPAY_COMMERCE_CODE = "597055555532"  # Código de pruebas
+WEBPAY_API_KEY = "579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C"  # API Key de pruebas
+WEBPAY_RETURN_URL = "http://localhost:5000/api/webpay/confirmar"
+PRECIO_RESERVA = 1  # Monto en CLP para pruebas

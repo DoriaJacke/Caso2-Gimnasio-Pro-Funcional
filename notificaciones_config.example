@@ -1,0 +1,13 @@
+GMAIL_EMAIL = 'theuntitled@gmail.com'
+GMAIL_PASSWORD = 'theuntitled123'  # Contraseña de aplicación de Gmail
+GMAIL_SMTP_SERVER = 'smtp.gmail.com'
+GMAIL_SMTP_PORT = 587
+
+TWILIO_ACCOUNT_SID = 'ACa487805c3c273c1634418c7e86515b35'
+TWILIO_AUTH_TOKEN = '7559df94e71914ab07183ec70b536d9b'
+TWILIO_PHONE_NUMBER = '+1234567890'  # Número de Twilio
+VERIFIED_PHONE_NUMBERS = ['+56912345678']  # Números verificados (cuenta trial)
+
+NOTIFICATIONS_ENABLED = True
+SMS_ENABLED = True
+EMAIL_ENABLED = True

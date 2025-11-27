@@ -13,9 +13,16 @@ USE gimnasio_db;
 CREATE TABLE IF NOT EXISTS usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(100) NOT NULL,
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    email VARCHAR(150) UNIQUE,
+    password VARCHAR(255),
+    telefono VARCHAR(20),
+    fecha_nacimiento DATE,
     rol ENUM('cliente', 'admin', 'entrenador') NOT NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_username (username),
+    INDEX idx_email (email),
     INDEX idx_rol (rol)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -68,11 +75,27 @@ CREATE TABLE IF NOT EXISTS bloques (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ==========================================
+-- TABLA: CONFIGURACION
+-- ==========================================
+CREATE TABLE IF NOT EXISTS configuracion (
+    nombre VARCHAR(100) PRIMARY KEY,
+    valor TEXT NOT NULL,
+    descripcion TEXT,
+    fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ==========================================
 -- DATOS INICIALES: ENTRENADORES
 -- ==========================================
 INSERT INTO entrenadores (nombre, especialidad) VALUES
 ('Ricardo Meruane', 'Entrenamiento Funcional'),
 ('George Harris', 'Fuerza y Acondicionamiento');
+
+-- ==========================================
+-- DATOS INICIALES: CONFIGURACION
+-- ==========================================
+INSERT INTO configuracion (nombre, valor, descripcion) VALUES
+('precio_reserva', '10000', 'Precio por reserva en CLP');
 
 -- ==========================================
 -- DATOS DE PRUEBA (OPCIONAL)
